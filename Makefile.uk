@@ -84,9 +84,15 @@ M4FLAGS      += -D __Unikraft__ -DUK_CODENAME="$(UK_CODENAME)"
 M4FLAGS      += -DUK_VERSION=$(UK_VERSION).$(UK_SUBVERSION)
 
 # If option ENABLE_PIE was called, we will compile Unikraft as a PIE
-ifeq ($(CONFIG_ENABLE_PIE),y)
-COMPFLAGS-$(call gcc_version_ge,6,1)	+= -fPIE -pie
+ifeq ($(CONFIG_OPTIMIZE_PIE),y)
+ifeq ($(CONFIG_PLAT_LINUXU),y)
+COMPFLAGS-$(call gcc_version_ge,6,1)	+= -fPIE
 LDFLAGS-$(call gcc_version_ge,6,1)		+= -pie
+endif
+ifeq ($(CONFIG_PLAT_KVM),y)
+COMPFLAGS-$(call gcc_version_ge,6,1)	+= -fPIC
+LDFLAGS-$(call gcc_version_ge,6,1)		+= -no-pie
+endif
 else
 # If GCC supports "-no-pie" flag, we will add this flag to link flags to
 # override "pie" option, because some distributions will set
@@ -102,6 +108,6 @@ LDFLAGS-$(CONFIG_OPTIMIZE_LTO) += -flinker-output=nolto-rel
 endif
 
 ASFLAGS-$(call have_clang)     += -mllvm -asm-macro-max-nesting-depth=1000
-COMPFLAGS-$(call have_clang)	+= -fno-builtin -fno-PIC
+COMPFLAGS-$(call have_clang)	+= -fno-builtin
 LDFLAGS-$(call have_clang)	+= -no-pie
 

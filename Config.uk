@@ -158,11 +158,12 @@ config RECORD_BUILDTIME
 	help
 		Record time (and resources) used by each build step
 
-config ENABLE_PIE
+config OPTIMIZE_PIE
 	bool "Compile Unikraft as a Position-Independent Executable"
 	default n
 	help
-		Testing for now
+		Compile Unikraft as a Position-Indipendent Executable 
+		that can be loaded using ASLR.
 
 if RECORD_BUILDTIME
 	choice
