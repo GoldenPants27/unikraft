@@ -202,6 +202,15 @@ def ukreloc_sym_to_struct(elf, ukreloc_sym):
     # Value already has the link time address added to it.
     value = int(nm_syms[0][0], 16) - BASE_ADDR
 
+    # We must also check whether this is a relocatable Page Table Entry.
+    # If it is, we must add the PTE attributes to the value to properly
+    # resolve the final value of the symbol. So look for an additional
+    # symbol with the `pte_attr` suffix.
+    for pte_attr in ukreloc_sym_to_struct.pte_attr_syms:
+        if ukreloc_sym[2] == pte_attr[2]:
+            value += int(pte_attr[0], 16)
+            flags |= UKRELOC_FLAGS_PHYS_REL
+
     # Get the size in bytes of the relocation.
     size = int(ukreloc_sym[4])
 
@@ -212,6 +221,11 @@ def ukreloc_sym_to_struct(elf, ukreloc_sym):
 def build_ukrelocs(elf, rela_dyn_secs, max_r_mem_off):
     ukrelocs = [rela_to_ukreloc(r) for r in rela_dyn_secs]
     ukreloc_syms = get_nm_syms(elf, get_ukreloc_sym_exp(r'data'))
+
+    # Also gather all of the PTE ukreloc's for use against relocatable
+    # PTE's.
+    ukreloc_sym_to_struct.pte_attr_syms = \
+                              get_nm_syms(elf, get_ukreloc_sym_exp(r'pte_attr'))
 
     for s in ukreloc_syms:
         ukreloc_en = ukreloc_sym_to_struct(elf, s)
