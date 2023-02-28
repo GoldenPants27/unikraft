@@ -83,6 +83,38 @@
 #endif
 .endm
 
+/**
+ * For proper positional independence we require that whatever page table
+ * related entries in the static page table we may have, they must be
+ * relocatable against a dynamic physical address. In addition to what
+ * `ur_data` does, `ur_pte` also creates a ukreloc symbol with `pte_attr0`
+ * suffix, containing the value of the PTE attribute. Example usage:
+ * ```
+ * ur_pte	x86_bpt_pd0_0, PTE_RW
+ * ```
+ * The above will make mkukreloc.py process the symbol
+ * x86_bpt_pd0_0_ukeloc_data8_phys representing in memory where this data is
+ * placed, x86_bpt_pd0_0_ukeloc_pte_attr0 representing the value of the
+ * page table entry attributes and the following entry:
+ * struct ukreloc {
+ *        __u64 r_mem_off = x86_bpt_pd0_0_ukeloc_data8_phys - __BASE_ADDR
+ *        __u64 r_addr = x86_bpt_pd0_0 - __BASE_ADDR + PTE_RW
+ *        __u32 r_sz = 8 from x86_bpt_pd0_0_ukeloc_data[8]_phys
+ *        __u32 flags = UKRELOC_FLAGS_PHYS_REL from x86_bpt_pd0_0_ukreloc_data8[_phys]
+ * } __packed;
+ *
+ * @param sym The symbol to relocate
+ * @param pte The page table entry's attribute flags
+ */
+.macro ur_pte pte_sym:req, pte:req
+#ifdef CONFIG_OPTIMIZE_PIE
+	ur_data	quad, \pte_sym, 8, _phys
+	ur_sym	\pte_sym\()_ukreloc_pte_attr0, \pte
+#else
+	ur_data	quad, (\pte_sym + \pte), 8, _phys
+#endif
+.endm
+
 #ifndef CONFIG_OPTIMIZE_PIE
 .align 4
 do_ukreloc:
