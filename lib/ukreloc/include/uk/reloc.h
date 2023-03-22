@@ -118,6 +118,40 @@ struct ukreloc_hdr {
 
 UK_CTASSERT(sizeof(struct ukreloc_hdr) == 4);
 
+/* Misaligned access here is never going to happen for a non-x86 architecture
+ * as there are no ukreloc_imm relocation types defined for them.
+ * We need this for x86 to patch early boot code, so it's a false positive.
+ * An alignment exception (#AC if CR0.AM=1 and RFLAGS.AC=1) on x86 can only
+ * occur in userspace, which Unikraft does not deal with anyway.
+ * If someone, in the future, adds a ukreloc type that allows
+ * misalignments on architectures that do not allow this, it's most likely
+ * not needed and an alternative solution should be considered.
+ *
+ * @param ur Pointer to the ukreloc entry to apply
+ * @param val The value of the relocation
+ * @param baddr The base address relative to which the relocation is applied
+ */
+#if defined(__X86_64__)
+#define X86_64_NO_SANITIZE_ALIGNMENT __attribute__((no_sanitize("alignment")))
+#else
+#define X86_64_NO_SANITIZE_ALIGNMENT
+#endif
+static inline void X86_64_NO_SANITIZE_ALIGNMENT
+apply_ukreloc(struct ukreloc *ur, __u64 val, void *baddr)
+{
+	switch (ur->r_sz) {
+	case 2:
+		*(__u16 *)((__u8 *)baddr + ur->r_mem_off) = (__u16)val;
+		break;
+	case 4:
+		*(__u32 *)((__u8 *)baddr + ur->r_mem_off) = (__u32)val;
+		break;
+	case 8:
+		*(__u64 *)((__u8 *)baddr + ur->r_mem_off) = (__u64)val;
+		break;
+	}
+}
+
 #endif /* !__ASSEMBLY__ */
 
 #endif /* __UKRELOC_H__ */
