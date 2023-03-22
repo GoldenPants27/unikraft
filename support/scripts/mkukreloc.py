@@ -221,6 +221,7 @@ def ukreloc_sym_to_struct(elf, ukreloc_sym):
 def build_ukrelocs(elf, rela_dyn_secs, max_r_mem_off):
     ukrelocs = [rela_to_ukreloc(r) for r in rela_dyn_secs]
     ukreloc_syms = get_nm_syms(elf, get_ukreloc_sym_exp(r'data'))
+    ukreloc_syms += get_nm_syms(elf, get_ukreloc_sym_exp(r'imm'))
 
     # Also gather all of the PTE ukreloc's for use against relocatable
     # PTE's.
