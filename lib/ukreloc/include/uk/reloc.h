@@ -83,6 +83,12 @@
 #endif
 .endm
 
+#ifndef CONFIG_OPTIMIZE_PIE
+.align 4
+do_ukreloc:
+	ret
+#endif
+
 #else  /* __ASSEMBLY__ */
 
 #include <uk/arch/types.h>
@@ -151,6 +157,17 @@ apply_ukreloc(struct ukreloc *ur, __u64 val, void *baddr)
 		break;
 	}
 }
+
+/* Relocates initial mkbootinfo.py memory regions and applies all ukreloc
+ * entries in the current image's .ukreloc section.
+ *
+ * @param r_paddr The physical address relative to which we apply a relocation,
+ *                used if UKRELOC_FLAGS_PHYS_REL flag is set.
+ *		  If 0, the current runtime base address is used.
+ * @param r_vaddr The virtual address relative to which we apply a relocation.
+ *		  If 0, the current runtime base address is used.
+ */
+void do_ukreloc(__paddr_t r_paddr, __vaddr_t r_vaddr);
 
 #endif /* !__ASSEMBLY__ */
 
