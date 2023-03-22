@@ -43,6 +43,9 @@
 /* _dtb: start of device tree */
 extern char _dtb[];
 
+/* _base_addr: base reference address as of link time */
+extern char _base_addr[];
+
 /* [_text, _etext]: contains .text.* sections */
 extern char _text[], _etext[];
 
@@ -75,6 +78,7 @@ extern char _end[];
 #define __uk_image_symbol(addr)    ((unsigned long)(addr))
 
 #define __DTB                   __uk_image_symbol(_dtb)
+#define __BASE_ADDR             __uk_image_symbol(_base_addr)
 #define __TEXT                  __uk_image_symbol(_text)
 #define __ETEXT                 __uk_image_symbol(_etext)
 #define __EH_FRAME_START        __uk_image_symbol(__eh_frame_start)
