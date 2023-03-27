@@ -73,6 +73,7 @@ SECTIONS {
 	_text = .;
 	.text :
 	{
+		KEEP (*(.data.boot))
 		*(.text)
 		*(.text.*)
 	} :text
