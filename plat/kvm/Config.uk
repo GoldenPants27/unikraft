@@ -14,7 +14,8 @@ menuconfig PLAT_KVM
 
 if (PLAT_KVM)
 
-if (ARCH_X86_64)
+choice
+	prompt "Booting environment"
 
 config KVM_BOOT_PROTO_MULTIBOOT
 	bool "Multiboot"
@@ -28,20 +29,34 @@ config KVM_BOOT_PROTO_LXBOOT
 	help
 		Linux 64-bit Boot Protocol
 
+config KVM_BOOT_EFI_STUB
+	bool "EFI stub"
+	depends on KVM_VMM_QEMU && !KVM_VMM_FIRECRACKER
+	select OPTIMIZE_PIE
+	select UKPLAT_ACPI
+	depends on !PLAT_LINUXU
+	help
+		Prepend a fake, architecture specific, PE header to the
+		final image, patched by mkefi.py. The new entry point
+		will be architecture specific initial stub, followed by
+		an architecture generic EFI stub that sets up everything
+		required to be able to enter a valid initial state of the
+		platform.
+
+endchoice
+
 choice
 	prompt "Virtual Machine Monitor"
 	default KVM_VMM_QEMU
 
 config KVM_VMM_QEMU
 	bool "QEMU"
-	select KVM_BOOT_PROTO_MULTIBOOT
 
 config KVM_VMM_FIRECRACKER
 	bool "Firecracker"
 	select KVM_BOOT_PROTO_LXBOOT
 
 endchoice
-endif
 
 menu "Console Options"
 
