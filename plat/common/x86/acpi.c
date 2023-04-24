@@ -37,6 +37,7 @@
 #include <x86/acpi/acpi.h>
 #include <string.h>
 #include <errno.h>
+#include <kvm/efi.h>
 #include <uk/plat/common/bootinfo.h>
 
 #define RSDP10_LEN		20
@@ -136,6 +137,38 @@ static void acpi_list_tables(void)
 }
 #endif /* UK_DEBUG */
 
+static acpi_rsdp_t *acpi_get_efi_st_rsdp()
+{
+	struct ukplat_bootinfo *bi = ukplat_bootinfo_get();
+	uk_efi_uintn_t ct_count, i;
+	uk_efi_cfg_tab_t *ct;
+	acpi_rsdp_t *rsdp;
+
+	UK_ASSERT(bi);
+
+	if (!bi->efi_st)
+		return NULL;
+
+	ct = ((uk_efi_sys_tab_t *)bi->efi_st)->configuration_table;
+	ct_count = ((uk_efi_sys_tab_t *)bi->efi_st)->number_of_table_entries;
+
+	UK_ASSERT(ct);
+	UK_ASSERT(ct_count);
+
+	rsdp = NULL;
+	for (i = 0; i < ct_count; i++)
+		if (!memcmp(&ct[i].vendor_guid, UK_EFI_ACPI20_TABLE_GUID,
+			    sizeof(ct[i].vendor_guid)))
+			return ct[i].vendor_table;
+		else if (!memcmp(&ct[i].vendor_guid, UK_EFI_ACPI10_TABLE_GUID,
+				 sizeof(ct[i].vendor_guid)))
+			rsdp = ct[i].vendor_table;
+
+	uk_pr_debug("ACPI RSDP present at %p\n", rsdp);
+
+	return rsdp;
+}
+
 static acpi_rsdp_t *acpi_get_bios_rom_rsdp()
 {
 	__paddr_t ptr;
@@ -152,6 +185,12 @@ static acpi_rsdp_t *acpi_get_bios_rom_rsdp()
 
 static acpi_rsdp_t *acpi_get_rsdp()
 {
+	acpi_rsdp_t *rsdp;
+
+	rsdp = acpi_get_efi_st_rsdp();
+	if (rsdp)
+		return rsdp;
+
 	return acpi_get_bios_rom_rsdp();
 }
 
