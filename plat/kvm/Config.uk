@@ -29,6 +29,12 @@ config KVM_BOOT_PROTO_LXBOOT
 	help
 		Linux 64-bit Boot Protocol
 
+config KVM_BOOT_QEMU_VIRT
+	bool "QEMU Virt"
+	depends on KVM_VMM_QEMU && !KVM_VMM_FIRECRACKER && ARCH_ARM_64
+	help
+		Default QEMU Virt environment
+
 config KVM_BOOT_EFI_STUB
 	bool "EFI stub"
 	depends on KVM_VMM_QEMU && !KVM_VMM_FIRECRACKER
