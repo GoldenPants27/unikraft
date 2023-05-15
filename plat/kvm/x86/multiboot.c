@@ -49,7 +49,6 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	__sz offset, cmdline_len;
 	__paddr_t start, end;
 	__u32 i;
-	int rc;
 
 	bi = ukplat_bootinfo_get();
 	if (unlikely(!bi))
@@ -117,14 +116,9 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 		     offset += m->size + sizeof(m->size)) {
 			m = (void *)(__uptr)(mi->mmap_addr + offset);
 
-			/* Ignore memory below the kernel image for now. This
-			 * is because on x86 there are special regions there
-			 * (e.g., BIOS) which are not represented in the
-			 * region list yet.
-			 */
-			start = MAX(m->addr, __END);
+			start = MAX(m->addr, __PAGE_SIZE);
 			end   = m->addr + m->len;
-			if (end <= start)
+			if (unlikely(end <= start || end - start < PAGE_SIZE))
 				continue;
 
 			mrd.pbase = start;
@@ -135,12 +129,6 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 				mrd.type  = UKPLAT_MEMRT_FREE;
 				mrd.flags = UKPLAT_MEMRF_READ |
 					    UKPLAT_MEMRF_WRITE;
-
-				rc = ukplat_memregion_list_insert_split_phys(
-					&bi->mrds, &mrd, __PAGE_SIZE);
-				if (unlikely(rc < 0))
-					multiboot_crash("Unable to add region",
-							rc);
 			} else {
 				mrd.type  = UKPLAT_MEMRT_RESERVED;
 				mrd.flags = UKPLAT_MEMRF_READ |
@@ -149,8 +137,9 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 				/* We assume that reserved regions cannot
 				 * overlap with loaded modules.
 				 */
-				mrd_insert(bi, &mrd);
 			}
+
+			mrd_insert(bi, &mrd);
 		}
 	}
 
