@@ -61,6 +61,13 @@ typedef struct acpi_rsdp {
 acpi_madt_t *acpi_get_madt(void);
 
 /**
+ * Get the Fixed ACPI Description Table (FADT).
+ *
+ * @return ACPI table pointer on success, NULL otherwise.
+ */
+acpi_fadt_t *acpi_get_fadt(void);
+
+/**
  * Detect ACPI version and fetch ACPI tables.
  *
  * @return 0 on success, -errno otherwise.
