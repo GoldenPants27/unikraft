@@ -32,10 +32,10 @@
  *
  */
 
-#ifndef __PLAT_CMN_X86_MADT_H__
-#define __PLAT_CMN_X86_MADT_H__
+#ifndef __PLAT_CMN_MADT_H__
+#define __PLAT_CMN_MADT_H__
 
-#include <x86/acpi/sdt.h>
+#include "sdt.h"
 
 #define ACPI_MADT_LAPIC						0x00
 #define ACPI_MADT_IO_APIC					0x01
@@ -234,4 +234,4 @@ typedef struct acpi_madt_mp_wkp_src {
 	__u64 mbox_paddr;
 } __packed acpi_madt_mp_wkp_src_t;
 
-#endif /* __PLAT_CMN_X86_MADT_H__ */
+#endif /* __PLAT_CMN_MADT_H__ */
