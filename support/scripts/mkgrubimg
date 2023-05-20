@@ -17,6 +17,7 @@ usage()
 # default options
 OPTFORMAT="iso"
 OPTCMDLINE=""
+OPTOUTPUT=${1}
 
 # cleanup
 BUILDDIR=
@@ -24,6 +25,36 @@ sighandler_exit()
 {
 	if [ ! -z "${BUILDDIR}" -a -d "${BUILDDIR}" ]; then
 		rm -rf "${BUILDDIR}"
+	fi
+}
+
+mkgrubiso()
+{
+	# configure grub
+	mkdir -p "${BUILDDIR}/boot/grub"
+
+	if [ ! -z "${OPTINITRD}" ]; then
+		GRUB_CFG_INITRD="module /boot/${OPTINITRDNAME}"
+		cp "${OPTINITRD}" "${BUILDDIR}/boot/${OPTINITRDNAME}" || exit 1
+	fi
+	cp "${OPTKERNELIMG}" "${BUILDDIR}/boot/" || exit 1
+
+	cat >"${BUILDDIR}/boot/grub/grub.cfg" <<EOF
+set default=0
+set timeout=0
+
+menuentry "${OPTKERNELNAME}" {
+	multiboot /boot/${OPTKERNELNAME} /${OPTKERNELNAME} ${OPTCMDLINE}
+	${GRUB_CFG_INITRD}
+	boot
+}
+EOF
+
+	# build grub image
+	GRUB_INSTALL_MSGS=$( grub-mkrescue -o "${OPTOUTPUT}" --install-modules="multiboot" --fonts="" --themes="" --locales="" "${BUILDDIR}/" 2>&1 )
+	if [ ${?} != 0 ]; then
+		printf '%s\n' "${GRUB_INSTALL_MSGS}" 1>&2
+		exit 1
 	fi
 }
 
@@ -57,7 +88,7 @@ if [[ -z "${OPTKERNELIMG}" ]]; then
 	echo "Missing path to kernel image ('-k')" 1>&2
 	usage
 fi
-if [[ -z "${1}" ]]; then
+if [[ -z "${OPTOUTPUT}" ]]; then
 	echo "Missing path to output image" 1>&2
 	usage
 fi
@@ -84,32 +115,7 @@ OPTINITRDNAME="${OPTINITRD##*/}"
 case "${OPTFORMAT}" in
 	# generate grub iso image
 	iso)
-		# configure grub
-		mkdir -p "${BUILDDIR}/boot/grub"
-
-		if [ ! -z "${OPTINITRD}" ]; then
-			GRUB_CFG_INITRD="module /boot/${OPTINITRDNAME}"
-			cp "${OPTINITRD}" "${BUILDDIR}/boot/${OPTINITRDNAME}" || exit 1
-		fi
-		cp "${OPTKERNELIMG}" "${BUILDDIR}/boot/" || exit 1
-
-		cat >"${BUILDDIR}/boot/grub/grub.cfg" <<EOF
-set default=0
-set timeout=0
-
-menuentry "${OPTKERNELNAME}" {
-	multiboot /boot/${OPTKERNELNAME} /${OPTKERNELNAME} ${OPTCMDLINE}
-	${GRUB_CFG_INITRD}
-	boot
-}
-EOF
-
-		# build grub image
-		GRUB_INSTALL_MSGS=$( grub-mkrescue -o "$1" --install-modules="multiboot" --fonts="" --themes="" --locales="" "${BUILDDIR}/" 2>&1 )
-		if [ $? != 0 ]; then
-			printf '%s\n' "$GRUB_INSTALL_MSGS" 1>&2
-			exit 1
-		fi
+		mkgrubiso
 		;;
 	*)
 		echo -e "\"${OPTFORMAT}\" not a supported format." 1>&2
