@@ -24,6 +24,7 @@
 #include <libfdt.h>
 #include <uk/plat/common/sections.h>
 #include <uk/plat/common/bootinfo.h>
+#include <uk/plat/common/acpi.h>
 #include <uk/plat/lcpu.h>
 #include <uk/plat/common/lcpu.h>
 #include <uart/pl011.h>
@@ -181,6 +182,12 @@ void __no_pauth _ukplat_entry(struct ukplat_bootinfo *bi)
 	pl031_init_rtc(fdt);
 #endif /* CONFIG_RTC_PL031 */
 
+#if defined(CONFIG_UKPLAT_ACPI)
+	rc = acpi_init();
+	if (unlikely(rc < 0))
+		uk_pr_err("ACPI init failed: %d\n", rc);
+#endif /* CONFIG_UKPLAT_ACPI */
+
 	/* Initialize interrupt controller */
 	intctrl_init();
 
@@ -189,7 +196,7 @@ void __no_pauth _ukplat_entry(struct ukplat_bootinfo *bi)
 	if (unlikely(rc))
 		UK_CRASH("Failed to initialize bootstrapping CPU: %d\n", rc);
 
-#ifdef CONFIG_HAVE_SMP
+#if defined(CONFIG_HAVE_SMP)
 	rc = lcpu_mp_init(CONFIG_UKPLAT_LCPU_RUN_IRQ,
 			  CONFIG_UKPLAT_LCPU_WAKEUP_IRQ,
 			  fdt);
