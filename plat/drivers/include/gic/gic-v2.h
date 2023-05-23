@@ -35,6 +35,9 @@
 
 #include <gic/gic.h>
 
+/* GICv2 GICC register map size page aligned up according to the spec. */
+#define GICD_V2_MEM_SZ					0x01000
+
 /*
  * Distributor registers. Unikraft only supports running on non-secure
  * so we just describe non-secure registers.
