@@ -389,7 +389,7 @@ size_t strlcat(char *d, const char *s, size_t n)
 #ifdef CONFIG_LIBUKMINBOOT
 char *strerror_r(int errnum, char *buf, size_t buflen)
 {
-	return "Stun call for lib ukminboot";
+	return "Stub call for lib ukminboot";
 }
 #else
 char *strerror_r(int errnum, char *buf, size_t buflen)

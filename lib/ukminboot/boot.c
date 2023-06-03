@@ -8,7 +8,7 @@
 #include <uk/essentials.h>
 // #include <uk/argparse.h>
 
-extern unsigned int boot_time;
+// extern unsigned int boot_time;
 
 int main(int argc, char *argv[]) __weak;
 
@@ -34,16 +34,16 @@ void ukplat_entry(int argc, char *argv[])
 	int rc = 0;
 
 	/* Compute boot time till main() call */
-	__asm__ ("movq	%rax, %rbx;"
-			 "xorl	%eax, %eax;"
-			 "lfence;"
-			 "rdtsc;"
-			 "lfence;"
-			 "subl	$boot_time, %eax;"
-			 "movl	%eax, boot_time;"
-			 "movq	%rbx, %rax;");
+	// __asm__ ("movq	%rax, %rbx;"
+	// 		 "xorl	%eax, %eax;"
+	// 		 "lfence;"
+	// 		 "rdtsc;"
+	// 		 "lfence;"
+	// 		 "subl	$boot_time, %eax;"
+	// 		 "movl	%eax, boot_time;"
+	// 		 "movq	%rbx, %rax;");
 
-	printf("boot time: %d\n", boot_time);
+	// printf("boot time: %d\n", boot_time);
 
     /* Call main */
 	rc = main(argc, argv);
