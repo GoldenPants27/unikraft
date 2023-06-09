@@ -40,7 +40,6 @@
 
 OUTPUT_FORMAT("elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
-ENTRY(_libkvmplat_entry)
 
 PHDRS
 {
@@ -67,10 +66,13 @@ SECTIONS {
 	_start_ram_addr = .;
 	. = . + DTB_RESERVED_SIZE;
 
+	_base_addr = .;		/* Symbol to represent the load base address */
+
 	/* Code */
 	_text = .;
 	.text :
 	{
+		KEEP (*(.data.boot))
 		*(.text)
 		*(.text.*)
 	} :text
@@ -131,5 +133,5 @@ SECTIONS {
 	.comment       0 : { *(.comment) }
 	DEBUG_SYMBOLS
 
-	/DISCARD/ : { *(.note.gnu.build-id) }
+	DISCARDS
 }

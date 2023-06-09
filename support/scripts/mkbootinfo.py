@@ -23,7 +23,7 @@ UKPLAT_MEMRF_EXECUTE    = 0x0004   # Region is executable
 UKPLAT_MEMR_NAME_LEN    = 36
 
 # Boot info structure (see include/uk/plat/common/bootinfo.h)
-UKPLAT_BOOTINFO_SIZE    = 64
+UKPLAT_BOOTINFO_SIZE    = 80
 
 UKPLAT_BOOTINFO_MAGIC   = 0xB007B0B0 # Boot Bobo
 UKPLAT_BOOTINFO_VERSION = 0x01
@@ -75,6 +75,9 @@ def main():
     out = subprocess.check_output(["objdump", "-p", opt.kernel])
     phdrs = re.findall(PHDRS_EXP, out.decode('utf-8'), re.MULTILINE)
 
+    # Make sure they are sorted by their addresses
+    phdrs = sorted(phdrs, key=lambda x: x[0])
+
     # The boot info is a struct ukplat_bootinfo
     # (see plat/common/include/uk/plat/common/bootinfo.h) followed by a list of
     # struct ukplat_memregion_desc (see include/uk/plat/memory.h).
@@ -92,6 +95,8 @@ def main():
         secobj.write(b'\0' * 16) # bootprotocol
         secobj.write(b'\0' * 8) # cmdline
         secobj.write(b'\0' * 8) # cmdline_len
+        secobj.write(b'\0' * 8) # dtb
+        secobj.write(b'\0' * 8) # efi_st
         secobj.write(cap.to_bytes(4, endianness)) # mrds.capacity
         secobj.write(b'\0' * 4) # mrds.count
 

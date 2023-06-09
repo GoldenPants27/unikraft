@@ -42,13 +42,16 @@
 #include <x86/cpu.h>
 #include <x86/traps.h>
 #include <x86/delay.h>
-#include <x86/acpi/madt.h>
+#include <uk/plat/common/acpi.h>
 
 #include <uk/plat/lcpu.h>
 #include <uk/plat/common/lcpu.h>
+#include <uk/reloc.h>
 
 #include <string.h>
 #include <errno.h>
+
+#include "start16_helpers.h"
 
 __lcpuid lcpu_arch_id(void)
 {
@@ -106,52 +109,78 @@ void __noreturn lcpu_arch_jump_to(void *sp, ukplat_lcpu_entry_t entry)
  * corresponding boot code somewhere in the first 1 MiB. We copy the trampoline
  * code to the target address during MP initialization.
  */
-extern __vaddr_t x86_start16_addr; /* target address */
-extern void *x86_start16_begin[];
-extern void *x86_start16_end[];
-#define X86_START16_SIZE						\
-	((__uptr)x86_start16_end - (__uptr)x86_start16_begin)
+IMPORT_START16_UKRELOC_SYM(gdt32_ptr, 2, MOV);
+IMPORT_START16_UKRELOC_SYM(gdt32, 4, DATA);
+IMPORT_START16_UKRELOC_SYM(lcpu_start16, 2, MOV);
+IMPORT_START16_UKRELOC_SYM(jump_to32, 2, MOV);
+IMPORT_START16_UKRELOC_SYM(lcpu_start32, 4, MOV);
+
+static void ukreloc_mp_init(void)
+{
+	size_t i;
+	struct ukreloc x86_start16_relocs[] = {
+		START16_UKRELOC_ENTRY(lcpu_start16, 2, MOV),
+		START16_UKRELOC_ENTRY(gdt32, 4, DATA),
+		START16_UKRELOC_ENTRY(gdt32_ptr, 2, MOV),
+		START16_UKRELOC_ENTRY(jump_to32, 2, MOV),
+	};
+
+	for (i = 0; i < ARRAY_SIZE(x86_start16_relocs); i++)
+		apply_ukreloc(&x86_start16_relocs[i],
+			      (__u64)x86_start16_addr +
+			      x86_start16_relocs[i].r_addr,
+			      (void *)x86_start16_addr);
+
+	/* Unlike the other entries, lcpu_start32 must stay the same
+	 * as it is not part of the start16 section
+	 */
+	apply_ukreloc(&(struct ukreloc)UKRELOC_ENTRY(
+				START16_UKRELOC_MOV_OFF(lcpu_start32, 4),
+				(__u64)lcpu_start32, 4,
+				UKRELOC_FLAGS_PHYS_REL),
+		       (__u64)lcpu_start32,
+		       (void *)x86_start16_addr);
+}
 
 int lcpu_arch_mp_init(void *arg __unused)
 {
-	struct MADT *madt;
-	union {
-		struct MADTEntryHeader *h;
-		struct MADTType0Entry *e0;
-		struct MADTType9Entry *e9;
-	} m;
-	__sz off, len;
-	struct lcpu *lcpu;
-	__lcpuid cpu_id;
 	__lcpuid bsp_cpu_id = lcpu_get(0)->id;
+	union {
+		acpi_madt_x2apic_t *x2apic;
+		acpi_madt_lapic_t *lapic;
+		acpi_subsdt_hdr_t *h;
+	} m;
 	int bsp_found __maybe_unused = 0;
+	struct lcpu *lcpu;
+	acpi_madt_t *madt;
+	__lcpuid cpu_id;
+	__sz off, len;
 
-	uk_pr_info("Bootstrapping processor has the ID %ld\n",
-		   bsp_cpu_id);
+	uk_pr_info("Bootstrapping processor has the ID %ld\n", bsp_cpu_id);
 
 	/* Enumerate all other CPUs */
 	madt = acpi_get_madt();
 	UK_ASSERT(madt);
 
-	len = madt->h.Length - sizeof(struct MADT);
-	for (off = 0; off < len; off += m.h->Length) {
-		m.h = (struct MADTEntryHeader *)(madt->Entries + off);
+	len = madt->hdr.tab_len - sizeof(*madt);
+	for (off = 0; off < len; off += m.h->len) {
+		m.h = (acpi_subsdt_hdr_t *)(madt->entries + off);
 
-		switch (m.h->Type) {
-		case MADT_TYPE_LAPIC:
-			if (!(m.e0->Flags & MADT_T0_FLAGS_ENABLED) &&
-			    !(m.e0->Flags & MADT_T0_FLAGS_ONLINE_CAPABLE))
+		switch (m.h->type) {
+		case ACPI_MADT_LAPIC:
+			if (!(m.lapic->flags & ACPI_MADT_LAPIC_FLAGS_EN) &&
+			    !(m.lapic->flags & ACPI_MADT_LAPIC_FLAGS_ON_CAP))
 				continue; /* goto next MADT entry */
 
-			cpu_id = m.e0->APICID;
+			cpu_id = m.lapic->lapic_id;
 			break;
 
-		case MADT_TYPE_LX2APIC:
-			if (!(m.e9->Flags & MADT_T9_FLAGS_ENABLED) &&
-			    !(m.e9->Flags & MADT_T9_FLAGS_ONLINE_CAPABLE))
+		case ACPI_MADT_LX2APIC:
+			if (!(m.x2apic->flags & ACPI_MADT_X2APIC_FLAGS_EN) &&
+			    !(m.x2apic->flags & ACPI_MADT_X2APIC_FLAGS_ON_CAP))
 				continue; /* goto next MADT entry */
 
-			cpu_id = m.e9->X2APICID;
+			cpu_id = m.x2apic->lapic_id;
 			break;
 
 		default:
@@ -179,8 +208,10 @@ int lcpu_arch_mp_init(void *arg __unused)
 
 	/* Copy AP startup code to target address in first 1MiB */
 	UK_ASSERT(x86_start16_addr < 0x100000);
-	memcpy((void *)x86_start16_addr, &x86_start16_begin,
-	       X86_START16_SIZE);
+	memcpy((void *)x86_start16_addr, &x86_start16_begin, X86_START16_SIZE);
+
+	ukreloc_mp_init();
+
 	uk_pr_debug("Copied AP 16-bit boot code to 0x%"__PRIvaddr"\n",
 		    x86_start16_addr);
 
