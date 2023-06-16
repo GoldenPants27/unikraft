@@ -34,8 +34,8 @@
 #include <arm/cpu.h>
 #include <arm/irq.h>
 #include <gic/gic.h>
-#include <kvm/config.h>
 #include <uk/essentials.h>
+#include <uk/plat/common/bootinfo.h>
 
 /** Corresponding driver for GIC present on the hardware */
 struct _gic_dev *gic;
@@ -45,7 +45,7 @@ void intctrl_init(void)
 	int rc;
 
 	/* Initialize GIC from DTB */
-	rc = _dtb_init_gic(_libkvmplat_cfg.dtb, &gic);
+	rc = init_gic(&gic);
 	if (unlikely(rc))
 		goto EXIT_ERR;
 
