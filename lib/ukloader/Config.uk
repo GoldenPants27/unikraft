@@ -1,0 +1,3 @@
+menuconfig LIBUKLOADER
+    bool "ukloader: Unikraft Loader that applies ASLR to the boot image (ALPHA). Requires libelf!"
+    default n
