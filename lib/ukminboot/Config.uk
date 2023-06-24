@@ -2,7 +2,7 @@ menuconfig LIBUKMINBOOT
 	bool "minimal-ukboot: Minimal Unikraft bootstrapping (testing)"
 	depends on !LIBUKBOOT
 	select HAVE_BOOTENTRY
-	default y
+	default n
 
 if LIBUKMINBOOT
 	config MYFILE_PATH

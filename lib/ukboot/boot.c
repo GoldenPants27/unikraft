@@ -90,7 +90,7 @@
 #include <uk/plat/tls.h>
 #include "banner.h"
 
-extern unsigned int boot_time;
+//extern unsigned int boot_time;
 
 int main(int argc, char *argv[]) __weak;
 
@@ -409,16 +409,16 @@ void ukplat_entry(int argc, char *argv[])
 	uk_pr_info("])\n");
 
 	/* Compute boot time till main() call */
-	__asm__ ("movq	%rax, %rbx;"
-			 "xorl	%eax, %eax;"
-			 "lfence;"
-			 "rdtsc;"
-			 "lfence;"
-			 "subl	$boot_time, %eax;"
-			 "movl	%eax, boot_time;"
-			 "movq	%rbx, %rax;");
+	// __asm__ ("movq	%rax, %rbx;"
+	// 		 "xorl	%eax, %eax;"
+	// 		 "lfence;"
+	// 		 "rdtsc;"
+	// 		 "lfence;"
+	// 		 "subl	$boot_time, %eax;"
+	// 		 "movl	%eax, boot_time;"
+	// 		 "movq	%rbx, %rax;");
 
-	printf("boot time: %d\n", boot_time);
+	// printf("boot time: %d\n", boot_time);
 
 	rc = main(argc, argv);
 	uk_pr_info("main returned %d, halting system\n", rc);

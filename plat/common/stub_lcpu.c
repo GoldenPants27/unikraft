@@ -13,7 +13,6 @@ int lcpu_init(struct lcpu *this_lcpu)
     /*
      * Stub for the same function from plat/common/lcpu.c
      */
-    this_lcpu = NULL;
 
     return 0;
 }

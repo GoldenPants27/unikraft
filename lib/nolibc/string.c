@@ -386,12 +386,12 @@ size_t strlcat(char *d, const char *s, size_t n)
  * List generated with `errno`
  * https://manpages.debian.org/testing/moreutils/errno.1.en.html
  */
-#ifdef CONFIG_LIBUKMINBOOT
-char *strerror_r(int errnum, char *buf, size_t buflen)
-{
-	return "Stun call for lib ukminboot";
-}
-#else
+// #ifdef CONFIG_LIBUKMINBOOT
+// char *strerror_r(int errnum, char *buf, size_t buflen)
+// {
+// 	return "Stun call for lib ukminboot";
+// }
+// #else
 char *strerror_r(int errnum, char *buf, size_t buflen)
 {
 	const char *strerr;
@@ -812,7 +812,7 @@ char *strerror_r(int errnum, char *buf, size_t buflen)
 	buf[buflen - 1] = '\0';
 	return buf;
 }
-#endif /* CONFIG_LIBUKMINBOOT */
+// #endif /* CONFIG_LIBUKMINBOOT */
 
 /* NOTE: strerror() is not thread-safe, nor reentrant-safe */
 char *strerror(int errnum)

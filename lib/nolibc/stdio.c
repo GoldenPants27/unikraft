@@ -98,12 +98,12 @@ static inline char *ksprintn(char *nbuf, uintmax_t num, int base, int *lenp,
 /*
  * Scaled down version of printf(3).
  */
-#ifndef CONFIG_LIBUKMINBOOT_PRINT
-int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
-{
-	return 0;
-}
-#else
+// #ifndef CONFIG_LIBUKMINBOOT_PRINT
+// int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
+// {
+// 	return 0;
+// }
+// #else
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
 #define PCHAR(c)                                                               \
@@ -403,7 +403,7 @@ number:
 	}
 #undef PCHAR
 }
-#endif /* CONFIG_LIBUKMINBOOT */
+// #endif /* CONFIG_LIBUKMINBOOT */
 
 int vsprintf(char *str, const char *fmt, va_list ap)
 {
